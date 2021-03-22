@@ -1,0 +1,183 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>一起来聊天吧~</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <style type="text/css">
+        body {
+            background-color: #789;
+            margin: 0;
+            padding: 0;
+            font: 14px Helvetica, Arial, sans-serif;
+        }
+
+        div.content {
+            width: 800px;
+            height: 600px;
+            margin: 2em auto;
+            padding: 20px 50px;
+            background-color: #fff;
+            border-radius: 1em;
+        }
+
+        #messages {
+            border: 2px solid #fec;
+            border-radius: 0em;
+            height: 30em;
+            overflow: scroll;
+            padding: 0.5em 1em;
+        }
+
+        #send_input {
+            width: 650px;
+        }
+
+        a:link, a:visited {
+            color: #69c;
+            text-decoration: none;
+        }
+
+        @media (max-width: 700px) {
+            body {
+                background-color: #fff;
+            }
+
+            div.content {
+                width: auto;
+                margin: 0 auto;
+                border-radius: 0;
+                padding: 1em;
+            }
+        }
+
+        #info {
+            animation: change 10s linear 0s infinite;
+            font-size: 15px;
+            font-weight: 60;
+        }
+
+        #user_name {
+            animation: change 5s linear 0s infinite;
+            font-size: 12px;
+            font-weight: 50;
+        }
+
+        @keyframes change {
+            0% {
+                color: #333;
+            }
+
+            25% {
+                color: #ff0;
+            }
+
+            50% {
+                color: #f60;
+            }
+
+            75% {
+                color: #cf0;
+            }
+
+            100% {
+                color: #f00;
+            }
+        }
+    </style>
+
+</head>
+<body>
+    <div id="app">
+        <div class="content">
+            <h1>欢迎来到我的IM聊天系统</h1>
+
+            <p>
+            </p>
+
+            <div id="messages">
+            </div>
+
+            <p>
+                <input type="text" id="send_input" v-model="send_msg" v-on:keyup.enter="send()"/>
+                <button id="send_button" v-on:click="send()"> 发送 </button>
+                <button id="quit_button" v-on:click="quit()"> 退出 </button>
+            </p>
+        </div>
+    </div>
+</body>
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script>
+    var app = new Vue({
+        el: '#app',
+        data: {
+            websock: null,
+            send_msg: "",
+            real_msg: ""
+        },
+        methods: {
+            init: function () {
+                var ws_url = "ws://" + window.location.host + "/websocket";
+                this.websock = new WebSocket(ws_url);
+
+                this.websock.onopen = this.wsonopen;
+                this.websock.onmessage = this.wsonmessage;
+                this.websock.onerrer = this.wsonerror;
+                this.websock.onclose = this.wsonclose;
+            },
+            wsonopen: function () {
+                //websocket连接建立成功后的回调函数
+                alert("聊天通道建立成功");
+            },
+            wsonerrer: function () {
+                //通信发生错误时触发的回调函数
+                alert("通信错误");
+                this.init();
+            },
+            wsonclose: function () {
+                //连接关闭时触发的回调函数
+                alert("连接关闭");
+            },
+            wsonmessage: function (e) {
+                //收到消息后触发的回调函数, e.data就是收到的数据
+                var com_div = document.createElement("div");
+                com_div.innerHTML = e.data;
+                var html_div = document.getElementById("messages");
+                html_div.appendChild(com_div);
+            },
+            get_cookie_name: function () {
+                var cookie = document.cookie;
+                var cookie_arry = cookie.split("; ");
+                for (var i = 0; i < cookie_arry.length; i++) {
+                    var arry = cookie_arry[i].split("=");
+                    if (arry[0] == "NAME") {
+                        return arry[1];
+                    }
+                }
+            },
+            send: function () {
+                //发送数据
+                if (this.send_msg.length == 0) {
+                    alert("消息不能为空");
+                    return;
+                }
+                var username = this.get_cookie_name();
+                this.real_msg = "<p>" + username + ": " + this.send_msg + "</p>";
+                this.websock.send(this.real_msg);
+                this.send_msg = "";
+            },
+            quit: function () {
+                //退出
+                this.websock.close(); //关闭websocket连接
+                window.location.href = "/login.html";
+            }
+
+        }
+    });
+    app.init();
+</script>
+
+
+</html>
